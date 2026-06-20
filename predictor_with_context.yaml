@@ -1,0 +1,68 @@
+seed_everything: true
+exp_root: experiments
+exp_name: predictor
+version: with_context
+trainer:
+  accelerator: gpu
+  strategy: auto
+  devices: 1
+  precision: 32
+  # max_epochs: 500
+  max_epochs: 100
+  check_val_every_n_epoch: 5
+  # num_sanity_val_steps: 1
+  # log_every_n_steps: 50
+  log_every_n_steps: 10
+  gradient_clip_val: 1.0
+  profiler: simple
+  default_root_dir: ${exp_root}/${exp_name}/${version}
+  logger:
+  - class_path: TensorBoardLogger
+    init_args:
+      save_dir: ${trainer.default_root_dir}
+      name: ${exp_name}_${version}
+  callbacks:
+  - class_path: ModelCheckpoint
+    init_args:
+      save_last: True
+      save_on_train_epoch_end: True
+      dirpath: ${trainer.default_root_dir}/ckpts
+  - class_path: LearningRateMonitor
+    init_args:
+      logging_interval: step
+
+model:
+  # batch_size_per_device: 64
+  batch_size_per_device: 32
+  gpus: ${trainer.devices}
+  latent_dim: 512
+  optimizer_conf:
+    basic_lr_per_img: 1.5625e-6
+  lr_scheduler_conf:
+    # milestones: [75, 150, 225, 275, 350, 450]
+    milestones: [30, 60, 90]
+    gamma: 0.9
+
+data:
+  # Directory mode loads labels/*/train.pkl for train and labels/*/val.pkl for val.
+  train_label_file: labels
+  val_label_file: labels
+  test_label_file: labels
+  pred_label_file: labels
+  batch_size_per_device: ${model.batch_size_per_device}
+  num_workers: 1
+  data_root: /hdd/u202520081000126/WHAM/preprocess/yt_videos/
+  img_dim: [518, 518]
+  img_root: image
+  num_timestamp: 60
+  min_timestamp: 10
+  use_partial: True
+  grid_size: [-8, 8, -2, 2, -2, 16]
+  scene_token_points: 2048
+  mode_train_target: predictor
+  use_image: True
+  use_data_augmentation: False
+  points_h5_root: h5
+  points_h5_index_name: points_h5_index.json
+
+ckpt_path: null
